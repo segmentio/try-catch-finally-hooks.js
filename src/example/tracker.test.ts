@@ -96,14 +96,14 @@ test("log try finally asMethodDecorator",()=>{
         }
       }
     },
-  })
+  }).createDecorator()
 
 
 
   const myFuncOrig = jest.fn((a,b)=>a+b)
 
   class MyClass {
-    @track.asDecorator({name:"MyAction"})
+    @track({name:"MyAction"})
     myFunc(a:number,b:number){
       return myFuncOrig(a,b)
     }
@@ -111,8 +111,6 @@ test("log try finally asMethodDecorator",()=>{
 
 
   const myClass = new MyClass()
-  console.log(MyClass.prototype.myFunc.toString())
-
   const res = myClass.myFunc(11,22)
 
   expect(res).toBe(11+22)
