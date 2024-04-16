@@ -87,13 +87,13 @@ export class TryCatchFinallyHooksBuilder<THookContext extends {}, TDecoratorArgs
           }
       
           return {
-            onFinally(ctx) {
+            onFinally() {
               for (const hr of hooksRes) {
                 if(hr && hr.onFinally) hr.onFinally()
               }
               bht.onFinally?.()
             },
-            onCatch(ctx) {
+            onCatch() {
               for (const hr of hooksRes) {
                 if(hr && hr.onCatch) hr.onCatch()
               }
@@ -103,6 +103,17 @@ export class TryCatchFinallyHooksBuilder<THookContext extends {}, TDecoratorArgs
         },
       })
     }
+  }
+
+  asDecorator(args?: TDecoratorArgs): MethodDecorator
+  {
+    return (target:any, propertyKey, descriptor) => {
+      descriptor.value = this.asFunctionWrapper(args)(descriptor.value as any)
+    }
+  }
+  createDecorator(): (args:TDecoratorArgs)=>MethodDecorator
+  {
+    return args=>this.asDecorator(args)
   }
 
   protected beforeHooksTry(ctx: THookContext):{
