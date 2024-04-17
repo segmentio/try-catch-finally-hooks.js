@@ -1,9 +1,10 @@
 export type FunctionContext<TFunc extends (...args: any[]) => any = (...args: any[]) => any> = {
+  funcArgs: Parameters<TFunc>
   outcome?: FunctionExecutionOutcome<TFunc>
 }
 
-export type FunctionInterceptors<TFunc extends (...args: any[]) => any = (...args:any[])=>any, TContext extends {} = {}> = {
-  onTry: () => {
+export type FunctionInterceptors<TFunc extends (this:any, ...args: any[]) => any = (...args:any[])=>any, TContext extends {} = {}> = {
+  onTry: (funcArgs:Parameters<TFunc>) => {
     context?: TContext
     onCatch?: (ctx: TContext & FunctionContext<TFunc>) => void
     onFinally?: (ctx: TContext & FunctionContext<TFunc>) => void  
@@ -17,22 +18,22 @@ export function createTryCatchFinally<TFunc extends (this:any, ...args: any[]) =
   interceptors: FunctionInterceptors<TFunc, TContext>
 ): TFunc {
   type Ctx = TContext & FunctionContext<TFunc>
-  return function (...args) {
+  return function (...funcArgs) {
     let isAsync = false
     let funcRes: ReturnType<TFunc>;
-    let ctx: Ctx = {} as any
+    let ctx: Ctx = { funcArgs } as any
     let tryRes: ReturnType<NonNullable<typeof interceptors.onTry>> = {} as any;
     let onCatch = 'onCatch' in interceptors ? interceptors.onCatch : undefined;
     let onFinally = 'onFinally' in interceptors ? interceptors.onFinally : undefined;
 
     try {
       if(interceptors.onTry)
-        tryRes = interceptors.onTry()
-      if(tryRes.context) ctx = tryRes.context
+        tryRes = interceptors.onTry(funcArgs as any)
+      if(tryRes.context) ctx = Object.assign(tryRes.context, ctx)
       if('onCatch' in tryRes) onCatch = tryRes.onCatch
       if('onFinally' in tryRes) onFinally = tryRes.onFinally
 
-      funcRes = fn.apply(this,args);
+      funcRes = fn.apply(this,funcArgs);
       isAsync = isPromise(funcRes);
       ctx.outcome = { type: 'success', result: funcRes as Awaited<ReturnType<TFunc>> };
       if (!isAsync) {
