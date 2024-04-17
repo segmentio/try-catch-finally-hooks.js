@@ -48,7 +48,7 @@ export class TryCatchFinallyHooksBuilder<THookContext extends {}, TDecoratorArgs
 
   private hooks:ITryCatchFinallyHook<any>[] = []
 
-  add<NewHookContext, NewArgs = DecoratorArgsOf<NewHookContext>>(hook: ITryCatchFinallyHook<NewHookContext>)
+  add<NewHookContext, NewArgs = DecoratorArgsOf<NewHookContext>>(hook: ITryCatchFinallyHook<THookContext & NewHookContext>)
   : TryCatchFinallyHooksBuilder<THookContext & NewHookContext, TDecoratorArgs & NewArgs>
   {
     this.hooks.push(hook);
@@ -75,8 +75,8 @@ export class TryCatchFinallyHooksBuilder<THookContext extends {}, TDecoratorArgs
     const afterHooksTry = this.afterHooksTry?.bind(this)
     return (func:any)=>{
       return createTryCatchFinally(func, {
-        onTry() {
-          const ctx = { args }
+        onTry(funcArgs) {
+          const ctx = { funcArgs, args }
           const bht = beforeHooksTry(ctx as any)
           const hooksRes = _this.forEachHook(hook=> hook.onTry( ctx as any))
           for (const hookRes of [...hooksRes]) {
