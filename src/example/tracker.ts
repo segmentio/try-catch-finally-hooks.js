@@ -32,7 +32,7 @@ const track = (() => {
 const myTrackedFunction = track.asFunctionWrapper({ name: 'MyAction' })(
   function myTrackedFunction(a: number, b: number) {
     track.current!.defer((op) => {
-      console.log('Defered action invoked at finally section of MyAction! Outcome:', op.outcome);
+      console.log('Defered action invoked at finally section of MyAction! Outcome:', op.funcOutcome);
     });
 
 

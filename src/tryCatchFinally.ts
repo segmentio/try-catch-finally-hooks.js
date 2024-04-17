@@ -1,10 +1,12 @@
 export type FunctionContext<TFunc extends (...args: any[]) => any = (...args: any[]) => any> = {
+  func: TFunc
+  funcWrapper: TFunc  
   funcArgs: Parameters<TFunc>
-  outcome?: FunctionExecutionOutcome<TFunc>
+  funcOutcome?: FunctionExecutionOutcome<TFunc>
 }
 
 export type FunctionInterceptors<TFunc extends (this:any, ...args: any[]) => any = (...args:any[])=>any, TContext extends {} = {}> = {
-  onTry: (funcArgs:Parameters<TFunc>) => {
+  onTry: (ctx: FunctionContext<TFunc>) => {
     context?: TContext
     onCatch?: (ctx: TContext & FunctionContext<TFunc>) => void
     onFinally?: (ctx: TContext & FunctionContext<TFunc>) => void  
@@ -17,64 +19,66 @@ export function createTryCatchFinally<TFunc extends (this:any, ...args: any[]) =
   fn: TFunc,
   interceptors: FunctionInterceptors<TFunc, TContext>
 ): TFunc {
-  type Ctx = TContext & FunctionContext<TFunc>
-  return function (...funcArgs) {
+  type Ctx = FunctionContext<TFunc> & TContext
+  let funcWrapper:TFunc = function tryCatchFinallyWrapper(...funcArgs) {
     let isAsync = false
     let funcRes: ReturnType<TFunc>;
-    let ctx: Ctx = { funcArgs } as any
+    let ctx: Ctx = <FunctionContext<TFunc>> { func: fn, funcArgs, funcWrapper } as any
     let tryRes: ReturnType<NonNullable<typeof interceptors.onTry>> = {} as any;
     let onCatch = 'onCatch' in interceptors ? interceptors.onCatch : undefined;
     let onFinally = 'onFinally' in interceptors ? interceptors.onFinally : undefined;
 
     try {
       if(interceptors.onTry)
-        tryRes = interceptors.onTry(funcArgs as any)
-      if(tryRes.context) ctx = Object.assign(tryRes.context, ctx)
+        tryRes = interceptors.onTry(ctx)
+      if(tryRes.context) Object.assign(ctx, tryRes.context)
       if('onCatch' in tryRes) onCatch = tryRes.onCatch
       if('onFinally' in tryRes) onFinally = tryRes.onFinally
 
-      funcRes = fn.apply(this,funcArgs);
+      funcRes = ctx.func?.apply(this,funcArgs);
       isAsync = isPromise(funcRes);
-      ctx.outcome = { type: 'success', result: funcRes as Awaited<ReturnType<TFunc>> };
+      ctx.funcOutcome = { type: 'success', result: funcRes as Awaited<ReturnType<TFunc>> };
       if (!isAsync) {
         return funcRes
       }
-      else return (async function () {
+      else return (async function tryCatchFinallyPromiseWrapper() {
         try {
-          ctx.outcome = { type: 'success', result: await funcRes };
+          ctx.funcOutcome = { type: 'success', result: await funcRes };
         } catch (err) {
-          ctx.outcome = { type: 'error', error: err }
+          ctx.funcOutcome = { type: 'error', error: err }
           onCatch?.(ctx);
         }
         finally {
           onFinally?.(ctx);
-          if (ctx.outcome) {
-            if (ctx.outcome.type === 'success') {
-              return ctx.outcome.result;
+          if (ctx.funcOutcome) {
+            if (ctx.funcOutcome.type === 'success') {
+              return ctx.funcOutcome.result;
             }
-            else if (ctx.outcome.type === 'error') {
-              throw ctx.outcome.error;
+            else if (ctx.funcOutcome.type === 'error') {
+              throw ctx.funcOutcome.error;
             }
           }
         }
       })()
     } catch (error) {
-      ctx!.outcome = { type: 'error', error }
+      ctx!.funcOutcome = { type: 'error', error }
       onCatch?.(ctx);
     } finally {
       if (!isAsync) {
         onFinally?.(ctx);
-        if (ctx!.outcome) {
-          if (ctx!.outcome.type === 'success') {
-            return ctx!.outcome.result;
+        if (ctx!.funcOutcome) {
+          if (ctx!.funcOutcome.type === 'success') {
+            return ctx!.funcOutcome.result;
           }
-          else if (ctx!.outcome.type === 'error') {
-            throw ctx!.outcome.error;
+          else if (ctx!.funcOutcome.type === 'error') {
+            throw ctx!.funcOutcome.error;
           }
         }
       }
     }
   } as TFunc;
+  Object.defineProperty(funcWrapper, 'name', { value: funcWrapper.name+'_'+(fn.name||'anonymous') });
+  return funcWrapper
 }
 
 export type FunctionExecutionOutcome<TFunc extends (...args: any[]) => any> = { type: 'success', result: Awaited<ReturnType<TFunc>> } | { type: 'error', error: any }
