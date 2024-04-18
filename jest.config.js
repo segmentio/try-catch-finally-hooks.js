@@ -11,4 +11,5 @@ module.exports = {
     "./jest.setupFilesAfterEnv.ts"
   ],
   testTimeout: 30000,
+  verbose: true
 };
