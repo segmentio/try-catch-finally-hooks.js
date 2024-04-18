@@ -1,4 +1,4 @@
-import { TryCatchFinallyHooksBuilder } from "../TryCatchFinallyHooks"
+import { TryCatchFinallyHooksBuilder } from "./TryCatchFinallyHooks"
 import { callStack } from './callStack'
 import { AsyncResource, AsyncLocalStorage } from 'node:async_hooks'
 
@@ -7,13 +7,13 @@ function createTrack(log:any){
   .add(callStack)
   .add({
     onTry(ctx) {
-      log("onTry", [...ctx.callstack.actions.map(c=>c.args.name), ctx.args.name].join('/'))
+      log("onTry", [...ctx.callstack.map(c=>c.args.name), ctx.args.name].join('/'))
       return {
         onFinally() {
-          log("onFinally",[...ctx.callstack.actions.map(c=>c.args.name), ctx.args.name].join('/'))
+          log("onFinally",[...ctx.callstack.map(c=>c.args.name), ctx.args.name].join('/'))
         },
         onCatch() {
-          log("onCatch",[...ctx.callstack.actions.map(c=>c.args.name), ctx.args.name].join('/'))
+          log("onCatch",[...ctx.callstack.map(c=>c.args.name), ctx.args.name].join('/'))
         }
       }
     }
@@ -22,7 +22,8 @@ function createTrack(log:any){
 
 
 test("callstack", ()=>{
-  const log = jest.fn((...args:any[])=>console.log(...args))
+  //const log = jest.fn((...args:any[])=>console.log(...args))
+  const log = jest.fn()
   const track = createTrack(log)
 
   const myChildFunc = jest.fn(track.asFunctionWrapper({name:"MyChildFunc"})((a:number,b:number)=>{
@@ -48,7 +49,8 @@ test("callstack", ()=>{
 
 test("callstack async",async ()=>{
   const amountOfParallels = 2
-  const log = jest.fn((...args:any[])=>console.log("async",...args))
+  //const log = jest.fn((...args:any[])=>console.log("async",...args))
+  const log = jest.fn()
   const track = createTrack(log)
 
   const asyncStr = new AsyncLocalStorage<any>()
@@ -84,20 +86,23 @@ test("callstack async",async ()=>{
 
 function delay(ms:number){return new Promise(r=>setTimeout(r,ms))}
 
-test.only("callstack recursive fiboncci", ()=>{
-  const log = jest.fn((...args:any[])=>console.log(...args))
+test("callstack recursive sync", ()=>{
+  //const log = jest.fn((...args:any[])=>console.log(...args))
+  const log = jest.fn()
   const track = createTrack(log)
 
-  const fib = jest.fn(track.asFunctionWrapper({name:"fib"})(function(n:number):number{
+  const myRecFunc = jest.fn(track.asFunctionWrapper({name:"myRecFunc"})(function(n:number):number{
     if(n<=1) return 1
-    return fib(n-1)+fib(n-2)
+    return 1+myRecFunc(n-1)
   }))
 
-  const actRes =fib(3)
-  const expRes = 1+ 1+2 + 1+2+3
+  const actRes =myRecFunc(3)
+  const expRes = 1 + 1 + 1
   expect(actRes).toBe(expRes)
-  expect(fib).toHaveBeenCalledTimes(1+2+3)
-  expect(log).toHaveBeenCalledTimes((1+2+3)*2)
+  expect(myRecFunc).toHaveBeenCalledTimes(3)
+  expect(log).toHaveBeenCalledTimes((3)*2)
+  expect(log).toHaveBeenNthCalledWith(1, "onTry", "myRecFunc")
+  expect(log).toHaveBeenNthCalledWith(2, "onTry", "myRecFunc/myRecFunc")
 })
 
 // test.skip('async hooks',async ()=>{
