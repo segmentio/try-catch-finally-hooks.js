@@ -1,5 +1,4 @@
 import { ITryCatchFinallyHook, TryCatchFinallyHooksBuilder } from "./TryCatchFinallyHooks";
-import { FunctionContext } from "./tryCatchFinally";
 
 /**
  * This is a callstack tracker, which provides Stack of Called Function Context - works both for async and sync call stacks
@@ -32,8 +31,8 @@ export type CallStackContext = {
 };
 
 
-export const callStack = TryCatchFinallyHooksBuilder.createHook<CallStackContext>(
-  (ctx)=>{
+export const callStack: ITryCatchFinallyHook<CallStackContext>= {
+  onTry(ctx){
     if(!ctx.name)
       ctx.name = ctx.args.name || ctx.func.name || '<anonymous>'
     
@@ -58,7 +57,7 @@ export const callStack = TryCatchFinallyHooksBuilder.createHook<CallStackContext
       lastInQueue: true
     };
   }
-)
+}
 
 /**
  * Returns current tracked callstack. Filters Error.captureStackTrace by tracked functions.

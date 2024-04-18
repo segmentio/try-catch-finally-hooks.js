@@ -1,6 +1,5 @@
 import { TryCatchFinallyHooksBuilder } from "./TryCatchFinallyHooks"
 import { callStack } from './callStack'
-import { AsyncResource, AsyncLocalStorage } from 'node:async_hooks'
 
 function createTrack(log:any){
   return new TryCatchFinallyHooksBuilder()
@@ -53,24 +52,16 @@ test("callstack async",async ()=>{
   const log = jest.fn()
   const track = createTrack(log)
 
-  const asyncStr = new AsyncLocalStorage<any>()
-  asyncStr.enterWith(["root"])
 
   const myChildFunc = jest.fn(track.asFunctionWrapper({name:"MyAsyncChildFunc"})(async function myChildFunc(a:number,b:number){
-    const path = [...asyncStr.getStore()||[]]
-    asyncStr.enterWith([...path,"child"])
     await delay(Math.random()*1000)
-    asyncStr.enterWith(path)
-
     return a+b
   }))
 
 
   const myParentFunc = jest.fn(track.asFunctionWrapper({name: 'MyAsyncParentFunc'})(async function myParentFunc(){
-    const path = [...asyncStr.getStore()||[]]
-    asyncStr.enterWith([...path,"parent"])
     return await Promise.allSettled(new Array(amountOfParallels).fill(0).map(async function promiseAllRunner(_,i){
-     await myChildFunc(i,i*2)
+      await myChildFunc(i,i*2)
     }))
   }))
 

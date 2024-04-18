@@ -109,6 +109,9 @@
   },
   "exclude": [
     "**/*.test.ts",
-    "src/example",
+    "**/*.spec.ts",
+    "**/specs",
+    "**/tests",
+    "jest*"
   ]
 }

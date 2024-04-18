@@ -1,10 +1,10 @@
-import { FunctionContext, createTryCatchFinally, FunctionInterceptors } from "./tryCatchFinally";
+import { FunctionContext, createTryCatchFinally } from "./tryCatchFinally";
 
-export interface ITryCatchFinallyHook<TParentContext extends FunctionContext=FunctionContext, TrtReturnContext={}>{
-  onTry(ctx: TParentContext): void | {
+export interface ITryCatchFinallyHook<TParentContext=FunctionContext, TrtReturnContext={}>{
+  onTry(ctx: TParentContext & FunctionContext): void | {
     context?: TrtReturnContext
-    onCatch?(ctx:TParentContext&TrtReturnContext): void
-    onFinally?(ctx:TParentContext&TrtReturnContext): void
+    onCatch?(ctx:FunctionContext & TParentContext&TrtReturnContext): void
+    onFinally?(ctx:FunctionContext & TParentContext & TrtReturnContext): void
     /**
      * If true, the hook will be executed after all other hooks
      */
@@ -20,9 +20,14 @@ export class TryCatchFinallyHooksBuilder<FullHookContext extends FunctionContext
 {
   private hooks:ITryCatchFinallyHook[] = []
 
+  add<TryReturnContext={}>(onTry:ITryCatchFinallyHook<FullHookContext,TryReturnContext>['onTry']): TryCatchFinallyHooksBuilder<FullHookContext & TryReturnContext>
   add<THookContext extends {}, TryReturnContext extends {}={}>(hook: ITryCatchFinallyHook<FullHookContext & THookContext,TryReturnContext>)
   : TryCatchFinallyHooksBuilder<THookContext &FullHookContext & TryReturnContext>
+  add(hook:any):any
   {
+    if(hook instanceof Function)
+      return this.add(TryCatchFinallyHooksBuilder.createHook(hook) as any)
+
     this.hooks.push(hook);
     return this as any;
   }
@@ -32,12 +37,6 @@ export class TryCatchFinallyHooksBuilder<FullHookContext extends FunctionContext
     return {
       onTry
     } as any
-  }
-
-  createAndAdd<TryReturnContext={}>(onTry:ITryCatchFinallyHook<FullHookContext,TryReturnContext>['onTry']): TryCatchFinallyHooksBuilder<FullHookContext & TryReturnContext>
-  {
-    this.add(TryCatchFinallyHooksBuilder.createHook(onTry) as any)
-    return this as any
   }
   
   asFunctionWrapper(args?: DecoratorArgsOf<FullHookContext>): <TFunc extends (...args:any[])=>any>(func:TFunc)=>TFunc

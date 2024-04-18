@@ -1,13 +1,24 @@
 import { callStack } from "../callStack";
-import { logOnFinally } from "./logOnFinally";
 import { measureDuration } from "../measureDuration";
-import { TryCatchFinallyHooksBuilder, ContextOf } from "../TryCatchFinallyHooks";
+import { TryCatchFinallyHooksBuilder, ITryCatchFinallyHook } from "../TryCatchFinallyHooks";
+
+
+export const logOnFinally: ITryCatchFinallyHook<{ args: { name?: string; }; name:string }> = {
+  onTry(ctx){
+  if(!ctx.name) ctx.name = ctx.args.name || ctx.func.name || '<anonymous>'
+  return {
+    onFinally() {
+      console.log(`Function ${ctx.args.name} finished!`);
+    },
+  };
+}};
+
 
 const track = new TryCatchFinallyHooksBuilder()
   .add(callStack)
   .add(measureDuration)
   .add(logOnFinally)
-  .createAndAdd(ctx => {
+  .add(ctx => {
     return {
       onFinally() {
         const datadog: any = {};
@@ -15,7 +26,7 @@ const track = new TryCatchFinallyHooksBuilder()
       },
     };
   })
-  .createAndAdd((ctx) => {
+  .add((ctx) => {
     type DeferContext = typeof ctx
     const funcsToDefer = [] as ((_ctx:DeferContext) => void)[]
     return {
@@ -46,3 +57,5 @@ const myTrackedFunction = track.asFunctionWrapper({ name: 'MyAction' })(
     return res;
   }
 );
+
+test.todo("combined tests")
