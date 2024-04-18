@@ -11,7 +11,7 @@ const track = new TryCatchFinallyHooksBuilder()
     return {
       onFinally() {
         const datadog: any = {};
-        datadog.histogram(`action-${ctx.args.name}-duration`, ctx.duration, { tags: ['action:' + ctx.name, 'callstack:' + ctx.callstack.map(c => c.name).join('/')] });
+        datadog.histogram(`action-${ctx.args.name}-duration`, ctx.duration, { tags: ['action:' + ctx.name, 'callstack:' + ctx.getCallStack().map(c => c.name).join('/')] });
       },
     };
   })

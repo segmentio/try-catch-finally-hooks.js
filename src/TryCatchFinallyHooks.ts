@@ -45,11 +45,10 @@ export class TryCatchFinallyHooksBuilder<FullHookContext extends FunctionContext
     const _this = this
     const beforeHooksTry = this.beforeHooksTry.bind(this)
     const afterHooksTry = this.afterHooksTry?.bind(this)
-    type TContext = FullHookContext & FunctionContext
     return (func:any)=>{
       return createTryCatchFinally(func, {
         onTry(funcCtx) {
-          const ctx:TContext = funcCtx as any
+          const ctx:FullHookContext = funcCtx as any
           if(args)
             (ctx as any).args = args
           const bht = beforeHooksTry(ctx)
@@ -122,6 +121,12 @@ export class TryCatchFinallyHooksBuilder<FullHookContext extends FunctionContext
   }
 
   private _currentContext:(FullHookContext & FunctionContext)|undefined = undefined
+
+
+  /**
+   * Only safe to use in sync functions or in async functions before any awaited code.
+   * Otherwise, the context may be changed by another async function - in that case use callStack hook instead
+   */
   get current(){
     return this._currentContext
   }

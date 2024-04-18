@@ -11,15 +11,28 @@ import { FunctionContext } from "./tryCatchFinally";
  * During onTry Context.func (that is about to be invoked) is replaced with a special function wrapper that has assigned unique name `callstack_callId:<context.callId>`.
  * Now those function names in Error.captureCallstack() can be associated context.callstack.callId via list of context objects that are currently active.
  * 
- * If you don't see actions in your callstack, increase Error.stackTraceLimit
+ * If you don't see actions in your callstack, increase Error.stackTraceLimit, but keep in mind that it impacts performance
  */
 
 const callPrefix = 'callstack_callId:'
 
-export type CallstackContext = { args: { name?: string;}, name:string, id: string, callstack: CallstackContext[] };
+export type CallStackContext = { 
+  args: {
+    name?: string;
+    isVisibleInCallStack?:boolean
+  },
+  name:string,
+  id: string,
+  
+  /**
+   * Returns current tracked callstack. Filters Error.captureStackTrace by tracked functions.
+   * If you don't see actions in your callstack, increase Error.stackTraceLimit
+   */
+  getCallStack(): CallStackContext[] 
+};
 
 
-export const callStack = TryCatchFinallyHooksBuilder.createHook<CallstackContext>(
+export const callStack = TryCatchFinallyHooksBuilder.createHook<CallStackContext>(
   (ctx)=>{
     if(!ctx.name)
       ctx.name = ctx.args.name || ctx.func.name || '<anonymous>'
@@ -27,20 +40,16 @@ export const callStack = TryCatchFinallyHooksBuilder.createHook<CallstackContext
     if(!ctx.id)
       ctx.id = Math.random().toString(16).slice(2)
     getOrUpdateAllActiveContexts(actions=>[...actions, ctx])
+
+    const isVisible = 'isVisibleInCallStack' in ctx.args ? ctx.args.isVisibleInCallStack : true
     
-
-    const origFunc = ctx.func
-    const callstackCallWrapper = function (this:any,...args:any) { return origFunc.apply(this, args) }
-    Object.defineProperty(callstackCallWrapper, 'name', {value:callPrefix+ctx.id})
-    ctx.func = callstackCallWrapper
-
-    Object.defineProperty(ctx, 'callstack', { 
-      get() {
-        const contextsMap = new Map(getOrUpdateAllActiveContexts().map(ctx=>[ctx.id, ctx]))
-        const actionCallIdStack = getActionCallIdsStack()
-        return actionCallIdStack.map(ctxId=>contextsMap.get(ctxId)!)
-      }
-    });
+    if(isVisible){
+      const origFunc = ctx.func
+      const callstackCallWrapper = function (this:any,...args:any) { return origFunc.apply(this, args) }
+      Object.defineProperty(callstackCallWrapper, 'name', {value:callPrefix+ctx.id})
+      ctx.func = callstackCallWrapper
+    }
+    ctx.getCallStack = getCurrentCallstack
     
     return {
       onFinally() {
@@ -50,6 +59,15 @@ export const callStack = TryCatchFinallyHooksBuilder.createHook<CallstackContext
     };
   }
 )
+
+/**
+ * Returns current tracked callstack. Filters Error.captureStackTrace by tracked functions.
+ * If you don't see actions in your callstack, increase Error.stackTraceLimit
+ */
+export function getCurrentCallstack():CallStackContext[]{
+  const contextsMap = new Map(getOrUpdateAllActiveContexts().map(ctx=>[ctx.id, ctx]))
+  return getActionCallIdsStack().map(ctxId=>contextsMap.get(ctxId)).filter(c=>c) as CallStackContext[]
+}
 
 function prepareActionStackTrace(error: Error, stack: NodeJS.CallSite[]): string[] {
   return stack
@@ -76,16 +94,16 @@ function getActionCallIdsStack():string[]
 
 const allActiveContexts// mimicking AsyncLocalStorage
  = {
-  _items:undefined as CallstackContext[]|undefined,
-  getStore():CallstackContext[]|undefined{
+  _items:undefined as CallStackContext[]|undefined,
+  getStore():CallStackContext[]|undefined{
     return [...this._items||[]]
   },
-  enterWith(items:CallstackContext[]){
+  enterWith(items:CallStackContext[]){
     this._items = items||[]
   }
  }
 
-function getOrUpdateAllActiveContexts(update?:(old:CallstackContext[])=>undefined|CallstackContext[]):CallstackContext[]{
+function getOrUpdateAllActiveContexts(update?:(old:CallStackContext[])=>undefined|CallStackContext[]):CallStackContext[]{
   const store = [...allActiveContexts.getStore()||[]]
   if(update)
   {
