@@ -3,7 +3,7 @@ import 'jest-extended'
 
 test("log onTry asScope",()=>{
   const log = jest.fn()
-  const track = new TryCatchFinallyHooksBuilder().add<{args:{name: string}}>({
+  const track = new TryCatchFinallyHooksBuilder().add<{ args:{name: string}}>({
     onTry(ctx) {
       log("onTry",ctx.args.name)
     },

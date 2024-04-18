@@ -1,9 +1,10 @@
 import { FunctionContext, createTryCatchFinally, FunctionInterceptors } from "./tryCatchFinally";
 
-export interface ITryCatchFinallyHook<TContext={}>{
-  onTry(ctx: FunctionContext & TContext): void | {
-    onCatch?(): void
-    onFinally?(): void
+export interface ITryCatchFinallyHook<TParentContext extends FunctionContext=FunctionContext, TrtReturnContext={}>{
+  onTry(ctx: TParentContext): void | {
+    context?: TrtReturnContext
+    onCatch?(ctx:TParentContext&TrtReturnContext): void
+    onFinally?(ctx:TParentContext&TrtReturnContext): void
     /**
      * If true, the hook will be executed after all other hooks
      */
@@ -11,69 +12,40 @@ export interface ITryCatchFinallyHook<TContext={}>{
   }
 }
 
-export type HookContextOf<THook> = THook extends ITryCatchFinallyHook<infer T> ? T : never
+export type HookContextOf<THook> = THook extends ITryCatchFinallyHook<infer T1,infer T2> ? T1&T2 : never
 
 export type DecoratorArgsOf<THookContext> = THookContext extends {args?: infer TArgs extends {}} ? TArgs : {}
 
-export class TryCatchFinallyHooksBuilder<THookContext extends {}, TDecoratorArgs extends {} = DecoratorArgsOf<THookContext>> //implements FunctionInterceptors
+export class TryCatchFinallyHooksBuilder<FullHookContext extends FunctionContext = FunctionContext>
 {
-  // onTry():{
-  //   context?: {} | undefined;
-  //   onCatch?: ((ctx: FunctionContext<(...args: any[]) => any>) => void) | undefined;
-  //   onFinally?: ((ctx: FunctionContext<(...args: any[]) => any>) => void) | undefined;
-  // } 
-  // {
-  //   const ctx = {}
-  //   const hooksRes = this.forEachHook(hook=> hook.onTry(ctx))
-  //   for (const hookRes of [...hooksRes]) {
-  //     if(hookRes && hookRes.lastInQueue){
-  //       const [itemToMove]  =hooksRes.splice(hooksRes.indexOf(hookRes), 1)
-  //       hooksRes.push(itemToMove)
-  //     }
-  //   }
+  private hooks:ITryCatchFinallyHook[] = []
 
-  //   return {
-  //     onFinally(ctx) {
-  //       for (const hr of hooksRes) {
-  //         if(hr && hr.onFinally) hr.onFinally()
-  //       }
-  //     },
-  //     onCatch(ctx) {
-  //       for (const hr of hooksRes) {
-  //         if(hr && hr.onCatch) hr.onCatch()
-  //       }
-  //     }
-  //   }
-  // }
-
-  private hooks:ITryCatchFinallyHook<any>[] = []
-
-  add<NewHookContext, NewArgs = DecoratorArgsOf<NewHookContext>>(hook: ITryCatchFinallyHook<THookContext & NewHookContext>)
-  : TryCatchFinallyHooksBuilder<THookContext & NewHookContext, TDecoratorArgs & NewArgs>
+  add<THookContext extends {}, TryReturnContext extends {}={}>(hook: ITryCatchFinallyHook<FullHookContext & THookContext,TryReturnContext>)
+  : TryCatchFinallyHooksBuilder<THookContext &FullHookContext & TryReturnContext>
   {
     this.hooks.push(hook);
     return this as any;
   }
 
-  static createHook<HookContext>(onTry: ITryCatchFinallyHook<HookContext>['onTry']) : ITryCatchFinallyHook<HookContext>
+  static createHook<TryHookContext, TryReturnContext={}>(onTry: ITryCatchFinallyHook<TryHookContext&FunctionContext, TryReturnContext>['onTry']) : ITryCatchFinallyHook<TryHookContext&FunctionContext, TryReturnContext>
   {
     return {
       onTry
-    }
+    } as any
   }
 
-  createAndAdd<NewHookContext, NewArgs = NewHookContext extends {args?: infer TNewArgs}? TNewArgs : {}>(onTry:ITryCatchFinallyHook<THookContext & NewHookContext>['onTry']): TryCatchFinallyHooksBuilder<THookContext & NewHookContext, TDecoratorArgs & NewArgs>
+  createAndAdd<TryReturnContext={}>(onTry:ITryCatchFinallyHook<FullHookContext,TryReturnContext>['onTry']): TryCatchFinallyHooksBuilder<FullHookContext & TryReturnContext>
   {
-    this.add(TryCatchFinallyHooksBuilder.createHook(onTry))
+    this.add(TryCatchFinallyHooksBuilder.createHook(onTry) as any)
     return this as any
   }
   
-  asFunctionWrapper(args?: TDecoratorArgs): <TFunc extends (...args:any[])=>any>(func:TFunc)=>TFunc
+  asFunctionWrapper(args?: DecoratorArgsOf<FullHookContext>): <TFunc extends (...args:any[])=>any>(func:TFunc)=>TFunc
   {
     const _this = this
     const beforeHooksTry = this.beforeHooksTry.bind(this)
     const afterHooksTry = this.afterHooksTry?.bind(this)
-    type TContext = THookContext & FunctionContext
+    type TContext = FullHookContext & FunctionContext
     return (func:any)=>{
       return createTryCatchFinally(func, {
         onTry(funcCtx) {
@@ -90,15 +62,15 @@ export class TryCatchFinallyHooksBuilder<THookContext extends {}, TDecoratorArgs
           }
       
           return {
-            onFinally() {
+            onFinally(_ctx) {
               for (const hr of hooksRes) {
-                if(hr && hr.onFinally) hr.onFinally()
+                if(hr && hr.onFinally) hr.onFinally(_ctx)
               }
               bht.onFinally?.()
             },
-            onCatch() {
+            onCatch(_ctx) {
               for (const hr of hooksRes) {
-                if(hr && hr.onCatch) hr.onCatch()
+                if(hr && hr.onCatch) hr.onCatch(_ctx)
               }
               bht.onCatch?.()
             }
@@ -108,18 +80,18 @@ export class TryCatchFinallyHooksBuilder<THookContext extends {}, TDecoratorArgs
     }
   }
 
-  asDecorator(args?: TDecoratorArgs): MethodDecorator
+  asDecorator(args?: DecoratorArgsOf<FullHookContext>): MethodDecorator
   {
     return (target:any, propertyKey, descriptor) => {
       descriptor.value = this.asFunctionWrapper(args)(descriptor.value as any)
     }
   }
-  createDecorator(): (args:TDecoratorArgs)=>MethodDecorator
+  createDecorator(): (args:DecoratorArgsOf<FullHookContext>)=>MethodDecorator
   {
     return args=>this.asDecorator(args)
   }
 
-  protected beforeHooksTry(ctx: THookContext):{
+  protected beforeHooksTry(ctx: FullHookContext):{
     onCatch?(): void
     onFinally?(): void
   }
@@ -134,12 +106,12 @@ export class TryCatchFinallyHooksBuilder<THookContext extends {}, TDecoratorArgs
       },
     }
   }
-  protected afterHooksTry?(ctx: THookContext):{
+  protected afterHooksTry?(ctx: FullHookContext):{
     onCatch?(): void
     onFinally?(): void
   }
   
-  asScope<TResult>(args: TDecoratorArgs, scope:()=>TResult):TResult
+  asScope<TResult>(args: DecoratorArgsOf<FullHookContext>, scope:()=>TResult):TResult
   {
     return this.asFunctionWrapper(args)(scope)()
   }
@@ -149,11 +121,12 @@ export class TryCatchFinallyHooksBuilder<THookContext extends {}, TDecoratorArgs
     return this.hooks.map(h=>fn(h));
   }
 
-  private _currentContext:(THookContext & FunctionContext)|undefined = undefined
+  private _currentContext:(FullHookContext & FunctionContext)|undefined = undefined
   get current(){
     return this._currentContext
   }
 
 }
 
-export type ContextOf<TTryCatchFinallyHooksBuilder extends TryCatchFinallyHooksBuilder<any>> = TTryCatchFinallyHooksBuilder extends TryCatchFinallyHooksBuilder<infer T> ? T & FunctionContext : never
+export type ContextOf<TTryCatchFinallyHooksBuilder extends TryCatchFinallyHooksBuilder<any>> 
+  = TTryCatchFinallyHooksBuilder extends TryCatchFinallyHooksBuilder<infer T1> ? T1 : never
