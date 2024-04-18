@@ -73,12 +73,15 @@ export class TryCatchFinallyHooksBuilder<THookContext extends {}, TDecoratorArgs
     const _this = this
     const beforeHooksTry = this.beforeHooksTry.bind(this)
     const afterHooksTry = this.afterHooksTry?.bind(this)
+    type TContext = THookContext & FunctionContext
     return (func:any)=>{
       return createTryCatchFinally(func, {
-        onTry(funcArgs) {
-          const ctx = { funcArgs, args }
-          const bht = beforeHooksTry(ctx as any)
-          const hooksRes = _this.forEachHook(hook=> hook.onTry( ctx as any))
+        onTry(funcCtx) {
+          const ctx:TContext = funcCtx as any
+          if(args)
+            (ctx as any).args = args
+          const bht = beforeHooksTry(ctx)
+          const hooksRes = _this.forEachHook(hook=> hook.onTry(ctx))
           for (const hookRes of [...hooksRes]) {
             if(hookRes && hookRes.lastInQueue){
               const [itemToMove]  =hooksRes.splice(hooksRes.indexOf(hookRes), 1)
