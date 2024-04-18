@@ -1,7 +1,8 @@
-export type FunctionContext<TFunc extends (...args: any[]) => any = (...args: any[]) => any> = {
+export type FunctionContext<TFunc extends (this:any, ...args: any[]) => any = (this:any,...args: any[]) => any> = {
   func: TFunc
   funcWrapper: TFunc  
   funcArgs: Parameters<TFunc>
+  funcThis?: ThisParameterType<TFunc>
   funcOutcome?: FunctionExecutionOutcome<TFunc>
 }
 
@@ -16,14 +17,14 @@ export type FunctionInterceptors<TFunc extends (this:any, ...args: any[]) => any
 }
 
 export function createTryCatchFinally<TFunc extends (this:any, ...args: any[]) => any, TContext extends {}>(
-  fn: TFunc,
+  func: TFunc,
   interceptors: FunctionInterceptors<TFunc, TContext>
 ): TFunc {
   type Ctx = FunctionContext<TFunc> & TContext
   let funcWrapper:TFunc = function tryCatchFinallyWrapper(...funcArgs) {
     let isAsync = false
     let funcRes: ReturnType<TFunc>;
-    let ctx: Ctx = <FunctionContext<TFunc>> { func: fn, funcArgs, funcWrapper } as any
+    let ctx: Ctx = <FunctionContext<TFunc>> { func, funcArgs, funcWrapper, funcThis: this } as any
     let tryRes: ReturnType<NonNullable<typeof interceptors.onTry>> = {} as any;
     let onCatch = 'onCatch' in interceptors ? interceptors.onCatch : undefined;
     let onFinally = 'onFinally' in interceptors ? interceptors.onFinally : undefined;
@@ -35,7 +36,7 @@ export function createTryCatchFinally<TFunc extends (this:any, ...args: any[]) =
       if('onCatch' in tryRes) onCatch = tryRes.onCatch
       if('onFinally' in tryRes) onFinally = tryRes.onFinally
 
-      funcRes = ctx.func?.apply(this,funcArgs);
+      funcRes = ctx.func?.apply(ctx.funcThis,ctx.funcArgs);
       isAsync = isPromise(funcRes);
       ctx.funcOutcome = { type: 'success', result: funcRes as Awaited<ReturnType<TFunc>> };
       if (!isAsync) {
@@ -77,7 +78,7 @@ export function createTryCatchFinally<TFunc extends (this:any, ...args: any[]) =
       }
     }
   } as TFunc;
-  Object.defineProperty(funcWrapper, 'name', { value: funcWrapper.name+'_'+(fn.name||'anonymous') });
+  Object.defineProperty(funcWrapper, 'name', { value: funcWrapper.name+'_'+(func.name||'anonymous') });
   return funcWrapper
 }
 

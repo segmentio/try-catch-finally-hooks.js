@@ -1,4 +1,4 @@
-import { callStack } from "../node/callStack";
+import { callStack } from "../callStack";
 import { logOnFinally } from "./logOnFinally";
 import { measureDuration } from "../measureDuration";
 import { TryCatchFinallyHooksBuilder, ContextOf } from "../TryCatchFinallyHooks";
