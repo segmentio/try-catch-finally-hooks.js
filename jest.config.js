@@ -8,8 +8,12 @@ module.exports = {
     }],
   },
   setupFilesAfterEnv:[
-    "./jest.setupFilesAfterEnv.ts"
+    //"./jest.setupFilesAfterEnv.ts"
+    "jest-extended/all"
   ],
   testTimeout: 30000,
-  verbose: true
+  verbose: true,
+  moduleNameMapper: {
+    "^@/(.*)$": "<rootDir>/src/$1"
+  }
 };

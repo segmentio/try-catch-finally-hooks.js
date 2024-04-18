@@ -1,6 +1,6 @@
-import { TryCatchFinallyHooksBuilder } from '../TryCatchFinallyHooks';
+import { TryCatchFinallyHooksBuilder } from '@/TryCatchFinallyHooks';
 
-test("log try finally asMethodDecorator", () => {
+test("log try finally asFunction", () => {
   const log = jest.fn();
   const track = new TryCatchFinallyHooksBuilder().add<{ args: { name: string; }; }>({
     onTry(ctx) {
@@ -14,22 +14,11 @@ test("log try finally asMethodDecorator", () => {
         }
       };
     },
-  }).createDecorator();
-
-
+  });
 
   const myFuncOrig = jest.fn((a, b) => a + b);
-
-  class MyClass {
-    @track({ name: "MyAction" })
-    myFunc(a: number, b: number) {
-      return myFuncOrig(a, b);
-    }
-  }
-
-
-  const myClass = new MyClass();
-  const res = myClass.myFunc(11, 22);
+  const myFunc = track.asFunctionWrapper({ name: "MyAction" })(myFuncOrig);
+  const res = myFunc(11, 22);
 
   expect(res).toBe(11 + 22);
   expect(myFuncOrig).toHaveBeenCalledTimes(1);
@@ -37,4 +26,5 @@ test("log try finally asMethodDecorator", () => {
   expect(log).toHaveBeenCalledTimes(2);
   expect(log).toHaveBeenCalledWith("onTry", "MyAction");
   expect(log).toHaveBeenCalledWith("onFinally", "MyAction");
+
 });
