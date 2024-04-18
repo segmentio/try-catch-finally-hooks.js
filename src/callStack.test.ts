@@ -48,7 +48,7 @@ test("callstack", ()=>{
 })
 
 test("callstack async",async ()=>{
-  const amountOfParallels = 2
+  const amountOfParallels = 10
   //const log = jest.fn((...args:any[])=>console.log("async",...args))
   const log = jest.fn()
   const track = createTrack(log)
@@ -88,6 +88,7 @@ function delay(ms:number){return new Promise(r=>setTimeout(r,ms))}
 
 test("callstack recursive sync", ()=>{
   //const log = jest.fn((...args:any[])=>console.log(...args))
+  const depth = 100
   const log = jest.fn()
   const track = createTrack(log)
 
@@ -96,78 +97,11 @@ test("callstack recursive sync", ()=>{
     return 1+myRecFunc(n-1)
   }))
 
-  const actRes =myRecFunc(3)
-  const expRes = 1 + 1 + 1
+  const actRes =myRecFunc(depth)
+  const expRes = depth
   expect(actRes).toBe(expRes)
-  expect(myRecFunc).toHaveBeenCalledTimes(3)
-  expect(log).toHaveBeenCalledTimes((3)*2)
+  expect(myRecFunc).toHaveBeenCalledTimes(depth)
+  expect(log).toHaveBeenCalledTimes((depth)*2)
   expect(log).toHaveBeenNthCalledWith(1, "onTry", "myRecFunc")
   expect(log).toHaveBeenNthCalledWith(2, "onTry", "myRecFunc/myRecFunc")
 })
-
-// test.skip('async hooks',async ()=>{
-//   const callStack = new AsyncLocalStorage<{name:string}[]>()
-//   callStack.enterWith([{name:"parent"}])
-//   await delay(100)
-//   expect(callStack.getStore()).toEqual([{name:"parent"}])
-//   callStack.enterWith([{name:"parent"}, {name:'child'}])
-//   await delay(100)
-//   expect(callStack.getStore()).toEqual([{name:"parent"},{name:"child"}])
-//   await delay(100)
-
-
-//   async function myAsyncFunc(){
-//     await delay(500)
-//     expect(callStack.getStore()).toEqual([{name:"parent"},{name:"child"}])
-//     callStack.enterWith([...callStack.getStore()!, {name:"myAsyncFunc"}])
-//     await delay(1000)
-//     expect(callStack.getStore()).toEqual([{name:"parent"},{name:"child"}, {name:"myAsyncFunc"}])
-//   }
-
-//   async function myAsyncFunc2(){
-//     await delay(1000)
-//     expect(callStack.getStore()).toEqual([{name:"parent"},{name:"child"}])
-//     callStack.enterWith([...callStack.getStore()!, {name:"myAsyncFunc2"}])
-//     await delay(1000)
-//     expect(callStack.getStore()).toEqual([{name:"parent"},{name:"child"}, {name:"myAsyncFunc2"}])
-//   }
-
-
-//   await Promise.allSettled([myAsyncFunc(), myAsyncFunc2()])
-
-//   expect(callStack.getStore()).toEqual([{name:"parent"},{name:"child"}])
-
-
-// })
-
-// test.skip('async hooks array',async ()=>{
-//   const callStack = new AsyncLocalStorage<string[]>()
-//   callStack.enterWith(["parent"])
-//   await delay(100)
-//   expect(callStack.getStore()).toEqual(["parent"])
-//   await delay(100)
-
-
-//   async function myAsyncFunc(n: number){
-//     const actionName = "myAsyncFunc"+n
-//     //await delay(0)
-//     const storeBeforeAwait = callStack.getStore()!
-//     //expect(storeBeforeAwait).toEqual(["parent"])
-//     callStack.enterWith([...storeBeforeAwait, actionName])
-    
-//     await delay(Math.random()*1000)
-    
-//     const storeAfterAwait = callStack.getStore()!
-//     expect(storeAfterAwait).toEqual([...storeBeforeAwait,actionName])
-//     const newStack = [...storeAfterAwait]
-//     newStack.pop()
-//     callStack.enterWith(newStack)
-//   }
-
-
-//   await Promise.all(new Array(2).fill(0).map((_,i)=>myAsyncFunc(i)))
-
-//   expect(callStack.getStore()).toEqual(["parent"])
-
-
-// })
