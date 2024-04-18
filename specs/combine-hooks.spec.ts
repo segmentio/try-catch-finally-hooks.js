@@ -1,6 +1,6 @@
-import { callStack } from "../callStack";
-import { measureDuration } from "../measureDuration";
-import { TryCatchFinallyHooksBuilder, ITryCatchFinallyHook } from "../TryCatchFinallyHooks";
+import { callStack } from "@/callStack";
+import { measureDuration } from "@/measureDuration";
+import { TryCatchFinallyHooksBuilder, ITryCatchFinallyHook } from "@/TryCatchFinallyHooks";
 
 
 export const logOnFinally: ITryCatchFinallyHook<{ args: { name?: string; }; name:string }> = {

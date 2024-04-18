@@ -1,4 +1,5 @@
-import { TryCatchFinallyHooksBuilder } from '../TryCatchFinallyHooks';
+import 'jest-extended'
+import { TryCatchFinallyHooksBuilder } from '@/TryCatchFinallyHooks'
 
 test("log onTry asScope", () => {
   const log = jest.fn();
@@ -82,7 +83,5 @@ test("async log onTry asScope",async ()=>{
   expect(logFinally).toHaveBeenCalledTimes(1)
   expect(logFinally).toHaveBeenCalledWith("onFinally", "MyAction")
 
-  expect(logFinally).toHaveBeenCalledAfter(myFunc);
-
-
+  expect(logFinally).toHaveBeenCalledAfter(myFunc)
 })
