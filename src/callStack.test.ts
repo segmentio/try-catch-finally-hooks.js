@@ -7,13 +7,13 @@ function createTrack(log:any){
   .add(callStack)
   .add({
     onTry(ctx) {
-      log("onTry", [...ctx.callstack.map(c=>c.args.name), ctx.args.name].join('/'))
+      log("onTry", [...ctx.getCallStack().map(c=>c.name), ctx.name].join('/'))
       return {
         onFinally() {
-          log("onFinally",[...ctx.callstack.map(c=>c.args.name), ctx.args.name].join('/'))
+          log("onFinally",[...ctx.getCallStack().map(c=>c.name), ctx.name].join('/'))
         },
         onCatch() {
-          log("onCatch",[...ctx.callstack.map(c=>c.args.name), ctx.args.name].join('/'))
+          log("onCatch",[...ctx.getCallStack().map(c=>c.name), ctx.name].join('/'))
         }
       }
     }
