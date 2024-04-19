@@ -8,7 +8,7 @@ on:
     types: [created]
 
 jobs:
-  build:
+  build_and_test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,12 +16,12 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-      - run: npm install
-      - run: npm run test
+      - run: npm ci
       - run: npm run build
+      - run: npm run test
 
   publish-npm:
-    needs: build
+    needs: build_and_test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,8 +30,9 @@ jobs:
           node-version: 20
           cache: 'npm'
           registry-url: https://registry.npmjs.org/
-      - run: npm ci
-      - run: npm run build
-      - run: npm publish
+      - run: npm version from-git --no-git-tag-version # update version in package.json before publishing it, but does not commit the change
+      - run: npm install # to update package-lock.json
+      - run: npm run build # generates dist folder
+      - run: npm publish # publish to npm registry
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}

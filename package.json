@@ -1,7 +1,8 @@
 {
   "name": "try-catch-finally-hooks",
   "version": "0.0.1",
-  "description": "",
+  "description": "try/catch/finally interceptors for logging and error handling",
+  "repository": "https://github.com/segmentio/try-catch-finally-hooks.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -18,7 +19,7 @@
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.4.5"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["proxy", "logging", "error-handling", "interceptor", "try-catch-finally", "aspect-oriented-programming"],
+  "author": "pmunin@twilio.com",
   "license": "ISC"
 }
