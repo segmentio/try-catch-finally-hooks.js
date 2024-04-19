@@ -1,7 +1,6 @@
 # Try-catch-finally-hooks
 
-(![NPM Version](https://img.shields.io/npm/v/try-catch-finally-hooks?link=https%3A%2F%2Fwww.npmjs.com%2Fpackage%2Ftry-catch-finally-hooks)
-)
+![NPM Version](https://img.shields.io/npm/v/try-catch-finally-hooks?link=https%3A%2F%2Fwww.npmjs.com%2Fpackage%2Ftry-catch-finally-hooks)
 
 This is a simple AOP-ish toolset that lets to wrap sync and async functions and class methods with hooks which let you:
 
