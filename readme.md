@@ -21,7 +21,7 @@ It supports sync and async functions/methods
 
 ```ts
 /// track.ts
-export const tracker = new TryCatchFinallyHooksBuilder()
+export const hooks = new Hooks()
   .add(callStack)
   .add(measureDuration)
   .add(ctx => {
@@ -44,13 +44,12 @@ export const tracker = new TryCatchFinallyHooksBuilder()
     };
   })
 
-export const trackFn = tracker.asFunctionWrapper.bind(tracker)
-export const trackMethod = tracker.asDecorator.bind(tracker)
-
+export const track = hooks.create()
 // myClass.ts
 
 class MyClass{
-  @trackMethod({name:'Hello world'})
+  @track({name:'Hello world'})
+  //@hooks.decor({name:'Hello world'}) //alternative
   async helloWorld(url:string)
   {
     await doing()
@@ -61,11 +60,13 @@ class MyClass{
 
 // myFunc.ts
 
-export const myFunc = trackFn({name: 'My function'})((param1:number)=>{
+
+export const myFunc = track({name: 'My function'}, (param1:number)=>{   //alternative: myFunc = hooks.wrap({name:'Hello world'}, (param1...)=>{...})
+
     // doing something long running and risky
   step1()
   step2()
-  const res = tracker.scope({name:'important step 3'},()=>{
+  const res = track.scope({name:'important step 3'},()=>{
     return step3(param1)
   })
   return res

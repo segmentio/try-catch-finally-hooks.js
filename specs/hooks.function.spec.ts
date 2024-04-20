@@ -1,8 +1,8 @@
-import { TryCatchFinallyHooksBuilder } from '@/TryCatchFinallyHooks';
+import { Hooks } from '@/Hooks';
 
 test("log try finally asFunction", () => {
   const log = jest.fn();
-  const track = new TryCatchFinallyHooksBuilder().add<{ args: { name: string; }; }>({
+  const track = new Hooks().add<{ args: { name: string; }; }>({
     onTry(ctx) {
       log("onTry", ctx.args.name);
       return {
@@ -17,7 +17,7 @@ test("log try finally asFunction", () => {
   });
 
   const myFuncOrig = jest.fn((a, b) => a + b);
-  const myFunc = track.asFunctionWrapper({ name: "MyAction" })(myFuncOrig);
+  const myFunc = track.wrap({ name: "MyAction" }, myFuncOrig);
   const res = myFunc(11, 22);
 
   expect(res).toBe(11 + 22);

@@ -1,10 +1,10 @@
-import { TryCatchFinallyHooksBuilder } from "./TryCatchFinallyHooks";
+import { Hooks } from "./Hooks";
 import { measureDuration } from "./measureDuration";
 
 test("measure duration", async() => {
   const actualDuration = 500;
 
-  const track = new TryCatchFinallyHooksBuilder()
+  const track = new Hooks()
     .add(measureDuration)
     //test
     .add(ctx=>{
@@ -15,7 +15,7 @@ test("measure duration", async() => {
       }
     })
   ;
-  const myTrackedFunction = track.asFunctionWrapper({ name: 'MyAction' })(
+  const myTrackedFunction = track.wrap({ name: 'MyAction' },
     async function myFunction(a: number, b: number) {
       await delay(actualDuration);
       return a + b;

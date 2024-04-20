@@ -1,16 +1,16 @@
 import 'jest-extended'
-import { TryCatchFinallyHooksBuilder } from '@/TryCatchFinallyHooks'
+import { Hooks } from '@/Hooks'
 
 test("log onTry asScope", () => {
   const log = jest.fn();
-  const track = new TryCatchFinallyHooksBuilder().add<{ args: { name: string; }; }>({
+  const track = new Hooks().add<{ args: { name: string; }; }>({
     onTry(ctx) {
       log("onTry", ctx.args.name);
     },
   });
 
   const myFunc = jest.fn((a, b) => a + b);
-  const res = track.asScope({ name: "MyAction" }, () => {
+  const res = track.scope({ name: "MyAction" }, () => {
     return myFunc(11, 22);
   });
 
@@ -23,7 +23,7 @@ test("log onTry asScope", () => {
 
 test("log try finally asScope",()=>{
   const log = jest.fn()
-  const track = new TryCatchFinallyHooksBuilder().add<{args:{name: string}}>({
+  const track = new Hooks().add<{args:{name: string}}>({
     onTry(ctx) {
       log("onTry",ctx.args.name)
       return {
@@ -38,7 +38,7 @@ test("log try finally asScope",()=>{
   })
 
   const myFunc = jest.fn((a,b)=>a+b)
-  const res = track.asScope({name:"MyAction"},()=>{
+  const res = track.scope({name:"MyAction"},()=>{
     return myFunc(11,22)
   })
 
@@ -54,7 +54,7 @@ test("log try finally asScope",()=>{
 test("async log onTry asScope",async ()=>{
   const logTry = jest.fn()
   const logFinally = jest.fn()
-  const track = new TryCatchFinallyHooksBuilder().add<{args:{name: string}}>({
+  const track = new Hooks().add<{args:{name: string}}>({
     onTry(ctx) {
       logTry("onTry",ctx.args.name)
       return {
@@ -71,7 +71,7 @@ test("async log onTry asScope",async ()=>{
     await delay(500)
     return a+b
   })
-  const res = await track.asScope({name:"MyAction"},async ()=>{
+  const res = await track.scope({name:"MyAction"},async ()=>{
     return await myFunc(11,22)
   })
 

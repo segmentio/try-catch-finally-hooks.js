@@ -1,4 +1,6 @@
-export type FunctionContext<TFunc extends (this:any, ...args: any[]) => any = (this:any,...args: any[]) => any> = {
+export type WrappableFunction = (this:any, ...args: any[]) => any
+
+export type FunctionContext<TFunc extends WrappableFunction = WrappableFunction> = {
   func: TFunc
   funcWrapper: TFunc  
   funcArgs: Parameters<TFunc>
@@ -6,8 +8,8 @@ export type FunctionContext<TFunc extends (this:any, ...args: any[]) => any = (t
   funcOutcome?: FunctionExecutionOutcome<TFunc>
 }
 
-export type FunctionInterceptors<TFunc extends (this:any, ...args: any[]) => any = (...args:any[])=>any, TContext extends {} = {}> = {
-  onTry: (ctx: FunctionContext<TFunc>) => {
+export type FunctionInterceptors<TFunc extends WrappableFunction = WrappableFunction, TContext extends {} = {}> = {
+  onTry: (ctx: FunctionContext<TFunc> & TContext) => {
     context?: TContext
     onCatch?: (ctx: TContext & FunctionContext<TFunc>) => void
     onFinally?: (ctx: TContext & FunctionContext<TFunc>) => void  
@@ -16,7 +18,7 @@ export type FunctionInterceptors<TFunc extends (this:any, ...args: any[]) => any
   onFinally?: (ctx: TContext & FunctionContext<TFunc>) => void
 }
 
-export function createTryCatchFinally<TFunc extends (this:any, ...args: any[]) => any, TContext extends {}>(
+export function createTryCatchFinally<TFunc extends WrappableFunction = WrappableFunction, TContext extends {}={}>(
   func: TFunc,
   interceptors: FunctionInterceptors<TFunc, TContext>
 ): TFunc {
@@ -82,7 +84,7 @@ export function createTryCatchFinally<TFunc extends (this:any, ...args: any[]) =
   return funcWrapper
 }
 
-export type FunctionExecutionOutcome<TFunc extends (...args: any[]) => any> = { type: 'success', result: Awaited<ReturnType<TFunc>> } | { type: 'error', error: any }
+export type FunctionExecutionOutcome<TFunc extends WrappableFunction> = { type: 'success', result: Awaited<ReturnType<TFunc>> } | { type: 'error', error: any }
 
 function isPromise(val: any): val is Promise<any> {
   return val && (val instanceof Promise || typeof val.then === 'function');

@@ -1,6 +1,7 @@
-import { TryCatchFinallyHooksBuilder } from "./TryCatchFinallyHooks";
+import { TryCatchFinallyHook } from "./TryCatchFinallyHook";
+import { Hooks } from "./Hooks";
 
-export const measureDuration = TryCatchFinallyHooksBuilder.createHook<{ duration: number; }>(ctx => {
+export const measureDuration:TryCatchFinallyHook<{ duration: number; }> = (ctx => {
   const start = Date.now();
   return {
     onFinally() {

@@ -1,4 +1,4 @@
-import { ITryCatchFinallyHook } from "./TryCatchFinallyHooks";
+import { ITryCatchFinallyHook } from "./TryCatchFinallyHook";
 import { FunctionContext } from "./tryCatchFinally";
 
 export type DeferContext = {

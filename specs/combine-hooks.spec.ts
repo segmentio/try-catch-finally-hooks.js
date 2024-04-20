@@ -1,6 +1,7 @@
 import { callStack } from "@/callStack";
 import { measureDuration } from "@/measureDuration";
-import { TryCatchFinallyHooksBuilder, ITryCatchFinallyHook } from "@/TryCatchFinallyHooks";
+import { ITryCatchFinallyHook } from "@/TryCatchFinallyHook";
+import { Hooks } from "@/Hooks";
 
 
 export const logOnFinally: ITryCatchFinallyHook<{ args: { name?: string; }; name:string }> = {
@@ -14,7 +15,7 @@ export const logOnFinally: ITryCatchFinallyHook<{ args: { name?: string; }; name
 }};
 
 
-const track = new TryCatchFinallyHooksBuilder()
+const track = new Hooks()
   .add(callStack)
   .add(measureDuration)
   .add(logOnFinally)
@@ -41,16 +42,16 @@ const track = new TryCatchFinallyHooksBuilder()
         }
       }
     }
-  })
+  }).create()
 ;
-const myTrackedFunction = track.asFunctionWrapper({ name: 'MyAction' })(
+const myTrackedFunction = track({ name: 'MyAction' },
   function myTrackedFunction(a: number, b: number) {
-    track.current!.defer((op) => {
+    track.hooks.context!.defer((op) => {
       console.log('Defered action invoked at finally section of MyAction! Outcome:', op.funcOutcome);
     });
 
 
-    const res = track.asScope({ name: 'Some running operation...' }, () => {
+    const res = track.scope({ name: 'Some running operation...' }, () => {
       return a + b;
     });
 

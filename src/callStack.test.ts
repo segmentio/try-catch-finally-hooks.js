@@ -1,8 +1,8 @@
-import { TryCatchFinallyHooksBuilder } from "./TryCatchFinallyHooks"
+import { Hooks } from "./Hooks"
 import { callStack } from './callStack'
 
 function createTrack(log:any){
-  return new TryCatchFinallyHooksBuilder()
+  return new Hooks()
   .add(callStack)
   .add({
     onTry(ctx) {
@@ -25,12 +25,12 @@ test("callstack", ()=>{
   const log = jest.fn()
   const track = createTrack(log)
 
-  const myChildFunc = jest.fn(track.asFunctionWrapper({name:"MyChildFunc"})((a:number,b:number)=>{
+  const myChildFunc = jest.fn(track.wrap({name:"MyChildFunc"},(a:number,b:number)=>{
     return a+b
   }))
 
 
-  const myParentFunc = jest.fn(track.asFunctionWrapper({name: 'MyParentFunc'})(()=>{
+  const myParentFunc = jest.fn(track.wrap({name: 'MyParentFunc'},()=>{
     (new Array(10).fill(0).map((_,i)=>{
      return myChildFunc(i,i*2)
     }))
@@ -53,13 +53,13 @@ test("callstack async",async ()=>{
   const track = createTrack(log)
 
 
-  const myChildFunc = jest.fn(track.asFunctionWrapper({name:"MyAsyncChildFunc"})(async function myChildFunc(a:number,b:number){
+  const myChildFunc = jest.fn(track.wrap({name:"MyAsyncChildFunc"}, async function myChildFunc(a:number,b:number){
     await delay(Math.random()*1000)
     return a+b
   }))
 
 
-  const myParentFunc = jest.fn(track.asFunctionWrapper({name: 'MyAsyncParentFunc'})(async function myParentFunc(){
+  const myParentFunc = jest.fn(track.wrap({name: 'MyAsyncParentFunc'}, async function myParentFunc(){
     return await Promise.allSettled(new Array(amountOfParallels).fill(0).map(async function promiseAllRunner(_,i){
       await myChildFunc(i,i*2)
     }))
@@ -83,7 +83,7 @@ test("callstack recursive sync", ()=>{
   const log = jest.fn()
   const track = createTrack(log)
 
-  const myRecFunc = jest.fn(track.asFunctionWrapper({name:"myRecFunc"})(function(n:number):number{
+  const myRecFunc = jest.fn(track.wrap({name:"myRecFunc"}, function(n:number):number{
     if(n<=1) return 1
     return 1+myRecFunc(n-1)
   }))
